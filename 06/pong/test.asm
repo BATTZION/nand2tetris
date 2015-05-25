@@ -1,0 +1,9 @@
+@ponggame.0
+M=D
+@SP
+M=M+1
+(ponggame.0)
+A=M-1
+M=0
+@54
+0;JMP
