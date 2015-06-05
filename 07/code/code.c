@@ -18,8 +18,11 @@
 #define POPTOA      "@SP\nM=M-1\n@SP\nA=M\nA=M\n"
 #define PUSHFROMD   "@SP\nA=M\nM=D\n@SP\nM=M+1\n"
 #define GETSP       "@SP\nA=M\n"
+
 char *JUMPS[]={"D;JEQ\n","D;JGT\n","D;JLT\n"};
 extern char *Arithmetic[];
+extern char filename[25];
+
 char *operation[]={"D=D+A\n","D=A-D\n","D=-D\n","D=A-D\n","D=A-D\n","D=A-D\n","D=A&D\n","D=A|D\n","D=!D\n",NULL};
 void CodeArithmetic(char operator[], FILE *file);
 void CodePushPop(COMMAND_TYPE type, char segment[], char index[], FILE *file);
@@ -203,7 +206,7 @@ void CodePush(char segment[], char index[], FILE *file)
 		//@static.index
 		//D=M;
 		strcat(asmcode,"@");
-		strcat(asmcode,"static.");
+		strcat(asmcode,filename);
 		strcat(asmcode,index);
 		strcat(asmcode,"\n");
 		fputs(asmcode,file);
@@ -247,7 +250,7 @@ void CodePop(char segment[], char index[], FILE *file)
 		//@static.index
 		//D=M;
 		strcat(asmcode,"@");
-		strcat(asmcode,"static.");
+		strcat(asmcode,filename);
 		strcat(asmcode,index);
 		strcat(asmcode,"\n");
 		fputs(asmcode,file);

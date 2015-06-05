@@ -9,17 +9,20 @@ char *Push[]={"push",NULL};
 char *Pop[]={"pop",NULL};
 char *Label[]={"label",NULL};
 char *Goto[]={"goto",NULL};
-char *If[]={"if_goto",NULL};
+char *If[]={"if-goto",NULL};
 char *Function[]={"fuction",NULL};
 char *Return[]={"return",NULL};
 char *Call[]={"call",NULL};
 char *Annotation[]={"//",NULL};
 
+char filename[25];
+
 void get_spilt(char source[], char dest[], int n);
 int have_string(char s[],char *d[]);
 COMMAND_TYPE GetCommandType(char s[]);
 void GetArg(char source[], char dest[], COMMAND_TYPE type, int n);
-
+void GetFilename(char source[]);
+char *strrev(char *str);
 void get_spilt(char s[], char d[], int n)
 {
 	char temp[MAX_ARG];
@@ -55,12 +58,12 @@ COMMAND_TYPE GetCommandType(char s[])
 	memset(head,0,sizeof(head));
 	get_spilt(s,head,1);
 	if(have_string(head,Arithmetic))
-	  return C_ARITHMETIC;
-	if(have_string(head,Push))
-	  return C_PUSH;
+	  return C_ARITHMETIC;                         //finished
+	if(have_string(head,Push)) 
+	  return C_PUSH;                               //finished
 	if(have_string(head,Pop))
-	  return C_POP;
-	if(have_string(head,Label))
+	  return C_POP;                                 //finished
+	if(have_string(head,Label))  
 	  return C_LABEL;
 	if(have_string(head,Goto))
 	  return C_GOTO;
@@ -73,9 +76,9 @@ COMMAND_TYPE GetCommandType(char s[])
 	if(have_string(head,Call))
 	  return C_CALL;
 	if(have_string(head,Annotation))
-	  return C_ANNOTATION;
+	  return C_ANNOTATION;                      //finished
 	else
-	  return C_UNKNOW;
+	  return C_UNKNOW;                           //finished
 
 }
 void GetArg(char s[], char d[], COMMAND_TYPE type, int n)
@@ -92,12 +95,36 @@ void GetArg(char s[], char d[], COMMAND_TYPE type, int n)
 			break;
 	}
 }
+void GetFilename(char source[])
+{
+	char *temp,*f;
+	int len;
+	f = filename;
+	if ( (temp = strstr(source, "/")) == NULL){
+		temp = source;
+		while (*temp != '.')
+		  *f++ = *temp++;
+		*f = 0;
+	}
+	else {
+		temp = source;
+		len = strlen(source);
+		while (temp[len] != '/' )
+		  len--;
+                len++;
+		while ( temp[len] != '.')
+		  *f++ = temp[len++];
+		*f++ = temp[len];
+		*f = 0;
+	}
+}
 int main(int argc, char *argv[])
 {
 	FILE *file, *file1;
 	char line[MAX_LINE];
 	char arg1[MAX_ARG];
 	char arg2[MAX_ARG];
+	GetFilename(argv[1]);
 	memset(line,0,sizeof(line));
 	memset(arg1,0,sizeof(arg1));
 	memset(arg2,0,sizeof(arg2));
