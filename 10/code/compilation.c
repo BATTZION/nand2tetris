@@ -2,8 +2,10 @@
 #include "MString.h"
 
 
-char *class_statement[] = {"constructor","function","method","field","",NULL};
-char *statements[] = {"do","let","while","if","return"};
+char *class_statement[] = {"constructor","function","method","field",NULL};
+char *statements[] = {"do","let","while","if","return",NULL};
+char *operator[] = {"+","-","*","/","&lt;","&gt;","&amp;","=",NULL};
+char *unaryop[] = {"~",NULL};
 int is_class_statement(char *line);
 void compile_class(FILE *filein, FILE *fileout);
 void compile_subroutine(FILE *filein, FILE *fileout, int key);
@@ -17,7 +19,8 @@ void compile_expression(FILE *filein, FILE *fileout);
 void compile_term(FILE *filein, FILE *fileout);
 void compile_return(FILE *filein, FILE *fileout);
 void compile_expressionlist(FILE *filein, FILE *fileout);
-
+void compile_class_vardec(FILE *filein, FILE *fileout);
+void compile_if(FILE *filein, FILE *fileout);
 void compilation(FILE *source, FILE *destination)
 {
 	init_fgets_buff();
@@ -56,9 +59,8 @@ void compile_class(FILE *filein, FILE *fileout)
 				compile_subroutine(filein,fileout,key);
 				break;
 			case 4:
-				break;
-			case 5:
-				compile_vardec(filein,fileout);
+				unfgets_buff(line,MAX_LINE);
+				compile_class_vardec(filein,fileout);
 				break;
 			default:
 				break;
@@ -151,6 +153,9 @@ void compile_statements(FILE *filein, FILE *fileout)
 			case 3:
 				compile_while(filein,fileout);
 				break;
+			case 4:
+				compile_if(filein,fileout);
+				break;
 			case 5:
 				compile_return(filein,fileout);
 				break;
@@ -202,9 +207,8 @@ void compile_let(FILE *filein, FILE *fileout)
 	while (fgets_buff(line,MAX_LINE,filein)){
 		get_spilt(line,character,2);
 		fputs(line,fileout);
-		if (strcmp(character, "=") == 0){
+		if (strcmp(character, "=") == 0 || strcmp(character, "[") == 0){
 			compile_expression(filein, fileout);
-			break;
 		}
 		if (strcmp(character, ";") == 0)
 		  break;
@@ -216,48 +220,90 @@ void compile_let(FILE *filein, FILE *fileout)
 }
 void compile_expression(FILE *filein, FILE *fileout)
 {
-	//char line[MAX_LINE];
-	//char character[MAX_LINE];
-	//memset(line, 0, sizeof(line));
-	//memset(character, 0, sizeof(character));
+	char line[MAX_LINE];
+	char character[MAX_LINE];
+	memset(line, 0, sizeof(line));
+	memset(character, 0, sizeof(character));
 	fputs("<expression>\n",fileout);
-	//while (fgets_buff(line,MAX_LINE,filein)){
-	//	get_spilt(line,character,2);
-	//	if (strcmp(character,")") == 0){
-	//		fputs("</expression>\n",fileout);
-	//		fputs("<symbol> ) </symbol>\n",fileout);
-	//		return;
-	//	}
-	//}
-	compile_term(filein, fileout);
+	while (fgets_buff(line,MAX_LINE,filein)){
+		get_spilt(line,character,2);
+        if (strcmp(character,";") == 0 || strcmp(character, ")") == 0 ){
+			unfgets_buff(line,MAX_LINE);
+			break;
+		}
+		if (strcmp(character,"]") == 0 || strcmp(character, ",") == 0 ){
+			fputs("</expression>\n",fileout);
+			fputs(line,fileout);
+			return;
+		}
+		if (find_string(character,operator)){
+			fputs(line,fileout);
+			compile_term(filein,fileout);
+		}
+		else{
+			unfgets_buff(line,MAX_LINE);
+			compile_term(filein,fileout);
+		}
+	}
 	fputs("</expression>\n",fileout);
-	fputs("<symbol> ; </symbol>\n",fileout);
 }
 void compile_term(FILE *filein, FILE *fileout)
 {
-	int flag = 1;
-	char line[MAX_LINE];
+	int flag = 0;
+	int lpren = 0;    //whether have lpren ?
+  	char line[MAX_LINE];
 	memset(line, 0, sizeof(line));
-	char line1[MAX_LINE];
-	memset(line1,0,sizeof(line1));
     char character[MAX_LINE];
 	memset(character, 0, sizeof(character));
-	fgets_buff(line1,MAX_LINE,filein);
-	get_spilt(line1,character,2);
-	if (strcmp(character,")") == 0){
-		memset(character,0,sizeof(character));
-		return;
-	}
 	fputs("<term>\n",fileout);
 	while((fgets_buff(line,MAX_LINE,filein))){
-		if (flag == 1){
-			fputs(line1,fileout);
-			flag = 0;
+		get_spilt(line,character,2);
+		
+		if (strcmp(character,";") == 0  || strcmp(character,"]") == 0 || find_string (character, operator)){
+			unfgets_buff(line,MAX_LINE);
+			break;
 		}
-		get_spilt(line, character, 2);
-		if (strcmp(character, ";") == 0) 
-		  break;
+	    if (find_string ( character, unaryop)){
+			fputs("<symbol> ~ </symbol>\n",fileout);
+			compile_term(filein,fileout);
+			fputs("</term>\n",fileout);
+			return;
+		}
+
+		if (strcmp(character, ",") == 0 ) {
+			fputs("</term>\n",fileout);
+			unfgets_buff(line,MAX_LINE);
+		    return;
+		}
+		if (strcmp(character, ")") ==0) {
+			if (lpren == 1){
+				fputs(line,fileout);
+				fputs("</term>\n",fileout);
+				return;
+			}
+			else{
+				fputs("</term>\n",fileout);
+				unfgets_buff(line,MAX_LINE);
+				return;
+			}
+		}
+
+		if (strcmp(character, ".") == 0)
+		  flag = 1;
 		fputs(line,fileout);
+
+		if (strcmp(character, "(") == 0){
+			lpren = 1;
+			if (flag == 1)
+			  compile_expressionlist(filein,fileout);
+			else 
+			  compile_expression(filein,fileout);
+		}
+		if (strcmp(character, "[") == 0)
+		  compile_expression(filein,fileout);
+
+		memset(line,0,sizeof(line));
+		memset(character,0,sizeof(character));
 	}
 	fputs("</term>\n",fileout);
 }
@@ -290,9 +336,14 @@ void compile_return(FILE *filein, FILE *fileout)
 	fputs("<keyword> return </keyword>\n",fileout);
 	while (fgets_buff(line, MAX_LINE, filein)){
 		get_spilt(line, character, 2);
-		fputs(line,fileout);
-		if (strcmp(character, ";") == 0)
-		  break;
+		if (strcmp(character, ";") == 0){
+			fputs(line,fileout);
+			break;
+		}
+		else{
+			unfgets_buff(line,MAX_LINE);
+			compile_expression(filein,fileout);
+		}
 		memset(line,0,sizeof(line));
 		memset(character,0,sizeof(character));
 	}
@@ -300,11 +351,113 @@ void compile_return(FILE *filein, FILE *fileout)
 }
 void compile_while(FILE *filein, FILE *fileout)
 {
-	;
+	char line[MAX_LINE];
+	char character[MAX_LINE];
+	memset(line,0,sizeof(line));
+	memset(character,0,sizeof(character));
+	
+	fputs("<whileStatement>\n",fileout);
+	fputs("<keyword> while </keyword>\n",fileout);
+    
+	// compile lparen
+	fgets_buff(line,MAX_LINE,filein);
+	fputs(line,fileout);
+	memset(line,0,sizeof(line));
+	// compile expression
+	compile_expression(filein,fileout); 
+	// compile rparen
+	fgets_buff(line,MAX_LINE,filein);
+	fputs(line,fileout);
+	memset(line,0,sizeof(line));
+    // compile "{"
+	fgets_buff(line,MAX_LINE,filein);
+	fputs(line,fileout);
+	memset(line,0,sizeof(line));
+	//compile statement
+	compile_statements(filein,fileout);
+
+	fputs("</whileStatement>\n",fileout);
+
 }
 void compile_expressionlist(FILE *filein, FILE *fileout)
 {
+	char line[MAX_LINE];
+	memset(line, 0, sizeof(line));
+	char character[MAX_LINE];
+	memset(character, 0, sizeof(character));
 	fputs("<expressionList>\n",fileout);
+	while(fgets_buff(line,MAX_LINE,filein)){
+		get_spilt(line,character,2);
+		if (strcmp(character,")") == 0){
+			fputs("</expressionList>\n",fileout);
+			fputs(line,fileout);
+			return;
+		}
+		else{
+			unfgets_buff(line,MAX_LINE);
+			compile_expression(filein,fileout);
+		}
+		memset(line,0,sizeof(line));
+		memset(character,0,sizeof(character));
+	}
 	fputs("</expressionList>\n",fileout);
+}
+void compile_class_vardec(FILE *filein, FILE *fileout)
+{
+	char line[MAX_LINE];
+	char character[MAX_LINE];
+	memset(line,0,sizeof(line));
+	memset(character,0,sizeof(character));
+	while (fgets_buff(line,MAX_LINE,filein)){
+		get_spilt(line,character,2);
+		if(strcmp ( character, "field" ) ==0 ){
+			fputs("<classVarDec>\n",fileout);
+			fputs(line,fileout);
+			memset(line,0,sizeof(line));
+			memset(character,0,sizeof(character));
+			while (fgets_buff(line,MAX_LINE,filein)) {
+				fputs(line,fileout);
+				get_spilt(line,character,2);
+				if (strcmp(character,";") ==0)
+				  break;
+				memset(line,0,sizeof(line));
+				memset(character,0,sizeof(character));
+			}
+			fputs("</classVarDec>\n",fileout);
+		}
+		else
+		  break;
+	}
+	unfgets_buff(line,MAX_LINE);
+}
+void compile_if(FILE *filein, FILE *fileout)
+{
+	char line[MAX_LINE];
+	char character[MAX_LINE];
+	memset(line,0,sizeof(line));
+	memset(character,0,sizeof(character));
+	
+	fputs("<ifStatement>\n",fileout);
+	fputs("<keyword> if </keyword>\n",fileout);
+    
+	// compile lparen
+	fgets_buff(line,MAX_LINE,filein);
+	fputs(line,fileout);
+	memset(line,0,sizeof(line));
+	// compile expression
+	compile_expression(filein,fileout); 
+	// compile rparen
+	fgets_buff(line,MAX_LINE,filein);
+	fputs(line,fileout);
+	memset(line,0,sizeof(line));
+    // compile "{"
+	fgets_buff(line,MAX_LINE,filein);
+	fputs(line,fileout);
+	memset(line,0,sizeof(line));
+	//compile statement
+	compile_statements(filein,fileout);
+
+	fputs("</ifStatement>\n",fileout);
 
 }
+

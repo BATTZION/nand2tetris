@@ -13,8 +13,8 @@
 #define STRING_CONST    4
 
 typedef int TYPE;
-char symbol[] = {';', '(', ')', ',', '=', '.', '<', '>', '{', '}', '[', ']', '+', '-', '*', '/', '&', '|',0};
-char *keyword[] = {"class","method","int","function","boolean","constructor","var","void","char","static","field","let","do","if","else","while","return","ture","false","null","this",NULL};
+char symbol[] = {';', '(', ')', ',', '=', '.', '<', '>', '{', '}', '[', ']', '+', '-', '*', '/', '&', '|','~',0};
+char *keyword[] = {"class","method","int","function","boolean","constructor","var","void","char","static","field","let","do","if","else","while","return","true","false","null","this",NULL};
 char *character[50];     //存放每一行分割的字符串1
 TYPE token_type(char *line);
 void print_token(char *line, TYPE type, FILE *file); 

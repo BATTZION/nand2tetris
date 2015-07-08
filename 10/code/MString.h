@@ -15,7 +15,7 @@ extern void Jacktokenizer(FILE *, FILE *);
 extern void get_spilt(char s[], char d[], int n);
 extern void compilation(FILE *filein, FILE *fileout);
 extern void init_fgets_buff();
-int fgets_buff(char *line, int size, FILE *file);
+char *fgets_buff(char *line, int size, FILE *file);
 void unfgets_buff(char *line, int size);
 void free_buffer();
 

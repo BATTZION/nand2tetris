@@ -113,9 +113,11 @@ int not_in_arrary(char c, char *arrary)
 extern int split_line(char *line, char **character,char *symbol)  //以 
 {
 	int i = 0, j = 0, k = 0, flag = 0;
-	while (line[i] != '\r' && line[i] != '\n' && !(line[i] =='\t' && line[i+1] =='\r' && !(line[i] == '/' && line[i+1] == '/'))){
+	while (line[i] != '\r' && line[i] != '\n' && !(line[i] =='\t' && line[i+1] =='\r') && !(line[i] == '/' && line[i+1] == '/')){
 		while (line[i] == ' ' || line[i] == '\t')
 		  i++;
+		if ((line[i] == '/' && line[i+1] == '/') || (line[i] == '\r'))
+		  break;
 		if (not_in_arrary(line[i],symbol) == 0){
 			if (line[i] == '<'){
 				strcpy(character[j],"&lt;");
@@ -158,15 +160,18 @@ extern int split_line(char *line, char **character,char *symbol)  //以
 }
 int is_annotation(char * line, FILE *file)
 {
-	int i = -1;
+	int i = 0;
 	char annotation[MAX_LINE];
 	memset(annotation,0,sizeof(annotation));
-	while (line[++i] == ' ')
-	  ;
+	while (line[i] == ' ' || line[i] == '\t')
+	   i++;
 	if (line[i] == '/' && line[i+1] == '/')
 	  return 1;
 	else if (line[i] == '/' && line[i+1] == '*'){
-		while (fgets(annotation,MAX_LINE,file)){
+		if (strstr(line,"*/"))
+		  return 1;
+		else 
+		  while (fgets(annotation,MAX_LINE,file)){
 			if (strstr(annotation,"*/"))
 			  break;
 			memset(annotation,0,sizeof(annotation));
