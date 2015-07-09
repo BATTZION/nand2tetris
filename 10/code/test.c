@@ -1,3 +1,10 @@
+/**
+ *   argv[1] : 输入目标文件
+ *   argv[2] : 输出字元集文件
+ *   argv[3] : 输出语法树文件
+ *   注:输出文件均为 xml 格式
+ */
+
 #include <stdio.h>
 #include "MString.h"
 

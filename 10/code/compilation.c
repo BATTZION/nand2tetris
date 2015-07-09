@@ -5,7 +5,7 @@
 char *class_statement[] = {"constructor","function","method","field",NULL};
 char *statements[] = {"do","let","while","if","return",NULL};
 char *operator[] = {"+","-","*","/","&lt;","&gt;","&amp;","=",NULL};
-char *unaryop[] = {"~",NULL};
+char *unaryop[] = {"~","-",NULL};
 int is_class_statement(char *line);
 void compile_class(FILE *filein, FILE *fileout);
 void compile_subroutine(FILE *filein, FILE *fileout, int key);
@@ -21,6 +21,9 @@ void compile_return(FILE *filein, FILE *fileout);
 void compile_expressionlist(FILE *filein, FILE *fileout);
 void compile_class_vardec(FILE *filein, FILE *fileout);
 void compile_if(FILE *filein, FILE *fileout);
+
+int is_first = 1;             //whether is the first term in a expression 
+
 void compilation(FILE *source, FILE *destination)
 {
 	init_fgets_buff();
@@ -225,11 +228,18 @@ void compile_expression(FILE *filein, FILE *fileout)
 	memset(line, 0, sizeof(line));
 	memset(character, 0, sizeof(character));
 	fputs("<expression>\n",fileout);
+	is_first = 1;
 	while (fgets_buff(line,MAX_LINE,filein)){
 		get_spilt(line,character,2);
         if (strcmp(character,";") == 0 || strcmp(character, ")") == 0 ){
 			unfgets_buff(line,MAX_LINE);
 			break;
+		}
+		if (find_string(character,unaryop)  && is_first  ){
+			unfgets_buff(line, MAX_LINE);
+			compile_term(filein,fileout);
+			is_first = 0;
+			continue;
 		}
 		if (strcmp(character,"]") == 0 || strcmp(character, ",") == 0 ){
 			fputs("</expression>\n",fileout);
@@ -243,6 +253,7 @@ void compile_expression(FILE *filein, FILE *fileout)
 		else{
 			unfgets_buff(line,MAX_LINE);
 			compile_term(filein,fileout);
+			is_first = 0;
 		}
 	}
 	fputs("</expression>\n",fileout);
@@ -263,8 +274,8 @@ void compile_term(FILE *filein, FILE *fileout)
 			unfgets_buff(line,MAX_LINE);
 			break;
 		}
-	    if (find_string ( character, unaryop)){
-			fputs("<symbol> ~ </symbol>\n",fileout);
+	    if (find_string ( character, unaryop) && is_first){
+			fputs(line,fileout);
 			compile_term(filein,fileout);
 			fputs("</term>\n",fileout);
 			return;
@@ -279,6 +290,7 @@ void compile_term(FILE *filein, FILE *fileout)
 			if (lpren == 1){
 				fputs(line,fileout);
 				fputs("</term>\n",fileout);
+				lpren ==0;
 				return;
 			}
 			else{
